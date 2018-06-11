@@ -6,7 +6,7 @@ GOTEST=$(GOCMD) test
 GOGET=$(GOCMD) get
 BINARY_NAME=SlackBot
 
-all: test build
+all: deps test build
 build:
 	$(GOBUILD) -o $(BINARY_NAME) -v
 test:
