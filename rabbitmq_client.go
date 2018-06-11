@@ -46,9 +46,9 @@ func (client *rabbitMQClient) connect() {
 	return
 }
 
-func (client rabbitMQClient) listen(queueName string, goChannel chan SlackMessage) {
+func (client rabbitMQClient) listen(queueName string, messageChannel chan SlackMessage, responseChannel chan bool) {
 
-	defer close(goChannel)
+	defer close(messageChannel)
 
 	q, err := client.ch.QueueDeclare(queueName, false, false,
 		false, false, nil)
@@ -63,9 +63,14 @@ func (client rabbitMQClient) listen(queueName string, goChannel chan SlackMessag
 		var messageToSend SlackMessage
 		json.Unmarshal(message.Body, &messageToSend)
 		log.Printf("Sending a message to %s (%f)", messageToSend.Consumer, messageToSend.Time)
-		goChannel <- messageToSend
-		err := message.Ack(false)
-		failOnError(err, "unable to ack")
+		messageChannel <- messageToSend
+		if <-responseChannel {
+			err := message.Ack(false)
+			failOnError(err, "unable to ack")
+		} else {
+			err := message.Nack(false, true)
+			failOnError(err, "unable to ack")
+		}
 		log.Printf("Waiting for messages")
 	}
 }

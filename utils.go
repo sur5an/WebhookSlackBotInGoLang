@@ -3,6 +3,7 @@ package main
 import "log"
 
 type StringArray []string
+var logFatal = log.Fatalf
 
 func (s StringArray) Contains(str string) (found bool) {
 	found = false
@@ -17,6 +18,6 @@ func (s StringArray) Contains(str string) (found bool) {
 
 func failOnError(err error, msg string) {
 	if err != nil {
-		log.Fatalf("%s: %s", msg, err)
+		logFatal("%s: %s", msg, err)
 	}
 }

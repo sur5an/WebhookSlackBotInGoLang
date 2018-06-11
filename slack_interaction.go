@@ -51,6 +51,9 @@ type Message struct {
 }
 
 var counter uint64
+var webSocketReceive = websocket.JSON.Receive
+var webSocketSend = websocket.JSON.Send
+var GetURL = http.Get
 
 func (channels channelList) find(channelName string) (channelToPublish string) {
 	channelToPublish = channelName
@@ -64,34 +67,30 @@ func (channels channelList) find(channelName string) (channelToPublish string) {
 }
 
 func (client slackClient) receiveMessage() (message string, err error) {
-	for {
-		println("waiting for message")
-		var m Message
-		err = websocket.JSON.Receive(client.webSocket, &m)
-		message = m.Text
-		println(m.Id, m.Type, m.Channel, m.Type)
-		if m.Type == "message" {
-			client.sendMessage(m.Text, m.Channel)
-		}
-	}
+	println("waiting for message")
+	var m Message
+	err = webSocketReceive(client.webSocket, &m)
+	failOnError(err, "unable to receive message through web socket")
+	message = m.Text
+	println(m.Id, m.Type, m.Channel, m.Type)
 	return
 }
 
-func (client slackClient) sendMessage(messageToChannel string, channel string) {
+func (client slackClient) sendMessage(messageToChannel string, channel string) (err error) {
 	var message Message
-
 	message.Id = atomic.AddUint64(&counter, 1)
 	message.Channel = client.memberChannels.find(channel)
 	message.Type = "message"
 	message.Text = messageToChannel
-	websocket.JSON.Send(client.webSocket, message)
+	err = webSocketSend(client.webSocket, message)
+	return err
 }
 
 func (client *slackClient) connect(token string) {
 	log.Print("connecting to slack")
 	url := fmt.Sprintf("https://slack.com/api/rtm.start?token=%s", token)
 
-	resp, err := http.Get(url)
+	resp, err := GetURL(url)
 	if err != nil {
 		failOnError(err, "error while connecting to slack")
 	}

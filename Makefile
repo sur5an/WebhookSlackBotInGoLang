@@ -10,7 +10,8 @@ all: deps test build
 build:
 	$(GOBUILD) -o $(BINARY_NAME) -v
 test:
-	$(GOTEST) -cover ./...
+	$(GOTEST) -v -coverprofile=coverage.out ./...
+	go tool cover -html=coverage.out
 clean:
 	$(GOCLEAN)
 	rm -f $(BINARY_NAME)

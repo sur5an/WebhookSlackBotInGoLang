@@ -47,6 +47,7 @@ func main() {
 	client.connect(v.GetString(SlackToken))
 
 	getMessage := make(chan SlackMessage)
+	sendAck := make(chan bool)
 
 	var mqClient rabbitMQClient
 	mqClient.Init(v.GetStringMapString(RabbitMQDetails))
@@ -54,12 +55,18 @@ func main() {
 
 	defer mqClient.ch.Close()
 	defer mqClient.connection.Close()
+	defer close(sendAck)
 
-	go mqClient.listen("publish_to_unknown", getMessage)
+	go mqClient.listen("publish_to_unknown", getMessage, sendAck)
 
 	for {
 		messageToSlack := <-getMessage
 		log.Printf("Got a message to %s (%f)", messageToSlack.Consumer, messageToSlack.Time)
-		client.sendMessage(messageToSlack.MessageToSend, messageToSlack.Consumer)
+		err := client.sendMessage(messageToSlack.MessageToSend, messageToSlack.Consumer)
+		ack := false
+		if err != nil {
+			ack = true
+		}
+		sendAck <- ack
 	}
 }
