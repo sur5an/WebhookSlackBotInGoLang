@@ -16,7 +16,8 @@ func (s StringArray) Contains(str string) (found bool) {
 	return
 }
 
-func failOnError(err error, msg string) {
+var failOnError = logAndCloseApp
+func logAndCloseApp(err error, msg string) {
 	if err != nil {
 		logFatal("%s: %s", msg, err)
 	}

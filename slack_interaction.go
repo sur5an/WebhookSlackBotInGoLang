@@ -54,6 +54,9 @@ var counter uint64
 var webSocketReceive = websocket.JSON.Receive
 var webSocketSend = websocket.JSON.Send
 var GetURL = http.Get
+var ReadHttpBody = ioutil.ReadAll
+var JsonUnMarshal = json.Unmarshal
+var WSDial = websocket.Dial
 
 func (channels channelList) find(channelName string) (channelToPublish string) {
 	channelToPublish = channelName
@@ -100,14 +103,14 @@ func (client *slackClient) connect(token string) {
 	}
 
 	log.Print("getting details about bot")
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := ReadHttpBody(resp.Body)
 	resp.Body.Close()
 	if err != nil {
 		failOnError(err, "error on getting details about bot")
 	}
 	var responseObject responseRtmStart
 	log.Print("parsing the details")
-	err = json.Unmarshal(body, &responseObject)
+	err = JsonUnMarshal(body, &responseObject)
 	if err != nil {
 		failOnError(err, "error while parsing slack details")
 	}
@@ -133,7 +136,7 @@ func (client *slackClient) connect(token string) {
 			client.memberChannels = append(client.memberChannels, group)
 		}
 	}
-	client.webSocket, err = websocket.Dial(responseObject.Url, "", "https://api.slack.com/")
+	client.webSocket, err = WSDial(responseObject.Url, "", "https://api.slack.com/")
 	failOnError(err, "error while dialing to webscoket")
 	return
 }

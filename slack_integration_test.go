@@ -5,6 +5,9 @@ import (
 	"encoding/json"
 	"golang.org/x/net/websocket"
 	"fmt"
+	"net/http"
+	"bytes"
+	"io"
 )
 
 func getTestSlackClient() (sc slackClient)  {
@@ -102,4 +105,108 @@ func TestSendMessage(t *testing.T) {
 	if err == nil {
 		t.Errorf("unit test failed expected error message but found nothing")
 	}
+}
+type nopCloser struct {
+	io.Reader
+}
+
+
+
+func (nopCloser) Close() error { return nil }
+
+func TestConnect(t *testing.T) {
+	OldGetUrl := GetURL
+	OldJsonUnMarshal := JsonUnMarshal
+	OldWSDial := WSDial
+	defer func(){GetURL = OldGetUrl;JsonUnMarshal=OldJsonUnMarshal;WSDial=OldWSDial}()
+	sc := getTestSlackClient()
+
+	GetURLPass := func(url string) (resp *http.Response, err error) {
+		resp = &http.Response{}
+		resp.StatusCode = 200
+		resp.Body = nopCloser{bytes.NewBufferString("sample")}
+		return
+	}
+	GetURL = GetURLPass
+
+	WSDial = func(url_, protocol, origin string) (ws *websocket.Conn, err error) {
+		return
+	}
+
+	JsonUnMarshal = func(data []byte, v interface{}) error {
+		ch := `{"Ok": true, "Self": {"Id": "1234"}, "Channels": [
+               {"id": "1234", "name":"channelName", "is_member": true},
+               {"id": "2345", "name":"myName", "is_member": false},
+               {"id": "3456", "name":"SlackBot", "is_member": true},
+               {"id": "4567", "name":"sur5an", "is_member": false}
+               ], "Groups": [
+               {"id": "xyz", "name":"channel", "members": ["a", "b", "xyz"]},
+               {"id": "wer", "name":"yourName", "members": ["a", "1"]},
+               {"id": "qwer", "name":"BOT", "members": ["qwer", "1234", "sadasd"]},
+               {"id": "45asd", "name":"suan", "members": ["asdas"]}
+               ]}`
+		m := v.(*responseRtmStart)
+		json.Unmarshal([]byte(ch), m)
+		return nil
+	}
+
+	sc.connect("1234")
+
+	failOnError = func(err error, msg string) {
+		if err == nil && msg != "error while dialing to webscoket" {
+			t.Errorf("Failed in UT while testing negative case")
+		}
+	}
+
+	GetURL = func(url string) (resp *http.Response, err error) {
+		resp = &http.Response{}
+		resp.StatusCode = 500
+		resp.Body = nopCloser{bytes.NewBufferString("sample")}
+		return
+	}
+	sc.connect("1234")
+
+
+	GetURL = func(url string) (resp *http.Response, err error) {
+		resp = &http.Response{}
+		resp.Body = nopCloser{bytes.NewBufferString("sample")}
+		err = fmt.Errorf("simulating error")
+		return
+	}
+	sc.connect("1234")
+
+	GetURL = GetURLPass
+
+	JsonUnMarshal = func(data []byte, v interface{}) error {
+		err := fmt.Errorf("simulating error")
+		return err
+	}
+
+	sc.connect("1234")
+
+	JsonUnMarshal = func(data []byte, v interface{}) error {
+		ch := `{"Ok": false, "Self": {"Id": "1234"}, "Channels": [
+               {"id": "1234", "name":"channelName", "is_member": true},
+               {"id": "2345", "name":"myName", "is_member": false},
+               {"id": "3456", "name":"SlackBot", "is_member": true},
+               {"id": "4567", "name":"sur5an", "is_member": false}
+               ], "Groups": [
+               {"id": "xyz", "name":"channel", "members": ["a", "b", "xyz"]},
+               {"id": "wer", "name":"yourName", "members": ["a", "1"]},
+               {"id": "qwer", "name":"BOT", "members": ["qwer", "1234", "sadasd"]},
+               {"id": "45asd", "name":"suan", "members": ["asdas"]}
+               ]}`
+		m := v.(*responseRtmStart)
+		json.Unmarshal([]byte(ch), m)
+		return nil
+	}
+
+	sc.connect("1234")
+
+	ReadHttpBody = func(r io.Reader) ([]byte, error) {
+		err := fmt.Errorf("simulating error")
+		return nil, err
+	}
+
+	sc.connect("1234")
 }

@@ -2,6 +2,7 @@ package main
 
 import (
     "testing"
+    "fmt"
 )
 
 func TestContains (t *testing.T) {
@@ -21,5 +22,13 @@ func TestContains (t *testing.T) {
             t.Errorf("Contains failed for %s unexpected output %t came", element.input, element.expectedOutput)
         }
     }
+}
 
+func TestLogAndCloseApp(t *testing.T)  {
+    logAndCloseApp(nil, "test")
+    err := fmt.Errorf("simulating error")
+    logFatal = func(format string, v ...interface{}) {
+        return 
+    }
+    logAndCloseApp(err, "test")
 }
