@@ -26,6 +26,8 @@ type rabbitMQClient struct {
 	connection   *amqp.Connection
 }
 
+var AMQPConnect = amqp.Dial
+
 func (client *rabbitMQClient) Init(rabbitMQDetails map[string]string) {
 	client.rabbitMQHost = rabbitMQDetails[RabbitMQHost]
 	client.username = rabbitMQDetails[RabbitMQUserName]
@@ -35,7 +37,7 @@ func (client *rabbitMQClient) Init(rabbitMQDetails map[string]string) {
 }
 
 func (client *rabbitMQClient) connect() {
-	conn, err := amqp.Dial("amqp://" + client.username + ":" +
+	conn, err := AMQPConnect("amqp://" + client.username + ":" +
 		client.password + "@" + client.rabbitMQHost + ":" + client.port)
 	failOnError(err, "failed to open rabbitmq connection with "+client.rabbitMQHost)
 

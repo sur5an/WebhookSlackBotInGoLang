@@ -28,7 +28,7 @@ func TestLogAndCloseApp(t *testing.T)  {
     logAndCloseApp(nil, "test")
     err := fmt.Errorf("simulating error")
     logFatal = func(format string, v ...interface{}) {
-        return 
+        return
     }
     logAndCloseApp(err, "test")
 }
