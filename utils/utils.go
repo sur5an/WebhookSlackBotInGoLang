@@ -1,9 +1,8 @@
-package main
+package utils
 
 import "log"
 
 type StringArray []string
-var logFatal = log.Fatalf
 
 func (s StringArray) Contains(str string) (found bool) {
 	found = false
@@ -16,9 +15,13 @@ func (s StringArray) Contains(str string) (found bool) {
 	return
 }
 
-var failOnError = logAndCloseApp
+
+var LogFatal = log.Fatalf
+
 func logAndCloseApp(err error, msg string) {
 	if err != nil {
-		logFatal("%s: %s", msg, err)
+		LogFatal("%s: %s", msg, err)
 	}
 }
+
+var FailOnError = logAndCloseApp

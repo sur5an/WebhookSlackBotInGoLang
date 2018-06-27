@@ -1,4 +1,4 @@
-package main
+package slackintegration
 
 import (
 	"testing"
@@ -8,9 +8,10 @@ import (
 	"net/http"
 	"bytes"
 	"io"
+	"WebhookSlackBotInGoLang/utils"
 )
 
-func getTestSlackClient() (sc slackClient)  {
+func getTestSlackClient() (sc SlackClient)  {
 	ch := `[
                {"id": "1234", "name":"channelName", "is_member": true},
                {"id": "2345", "name":"myName", "is_member": false},
@@ -73,7 +74,7 @@ func TestReceiveMessage(t *testing.T) {
 	json.Unmarshal([]byte(ch), &cl)
 	sc := getTestSlackClient()
 
-	message, err := sc.receiveMessage()
+	message, err := sc.ReceiveMessage()
 	if err != nil || message != "sample message" {
 		t.Errorf("unit test failed while getting message from slack mock")
 	}
@@ -96,12 +97,12 @@ func TestSendMessage(t *testing.T) {
 
 	sc := getTestSlackClient()
 
-	err := sc.sendMessage("test message", "channelName")
+	err := sc.SendMessage("test message", "channelName")
 	if err != nil {
 		t.Errorf("unit test failed %s", err.Error())
 	}
 
-	err = sc.sendMessage("fail me", "unknownChannel")
+	err = sc.SendMessage("fail me", "unknownChannel")
 	if err == nil {
 		t.Errorf("unit test failed expected error message but found nothing")
 	}
@@ -150,9 +151,9 @@ func TestConnect(t *testing.T) {
 		return nil
 	}
 
-	sc.connect("1234")
+	sc.Connect("1234")
 
-	failOnError = func(err error, msg string) {
+	utils.FailOnError = func(err error, msg string) {
 		if err == nil && msg != "error while dialing to webscoket" {
 			t.Errorf("Failed in UT while testing negative case")
 		}
@@ -164,7 +165,7 @@ func TestConnect(t *testing.T) {
 		resp.Body = nopCloser{bytes.NewBufferString("sample")}
 		return
 	}
-	sc.connect("1234")
+	sc.Connect("1234")
 
 
 	GetURL = func(url string) (resp *http.Response, err error) {
@@ -173,7 +174,7 @@ func TestConnect(t *testing.T) {
 		err = fmt.Errorf("simulating error")
 		return
 	}
-	sc.connect("1234")
+	sc.Connect("1234")
 
 	GetURL = GetURLPass
 
@@ -182,7 +183,7 @@ func TestConnect(t *testing.T) {
 		return err
 	}
 
-	sc.connect("1234")
+	sc.Connect("1234")
 
 	JsonUnMarshal = func(data []byte, v interface{}) error {
 		ch := `{"Ok": false, "Self": {"Id": "1234"}, "Channels": [
@@ -201,12 +202,12 @@ func TestConnect(t *testing.T) {
 		return nil
 	}
 
-	sc.connect("1234")
+	sc.Connect("1234")
 
 	ReadHttpBody = func(r io.Reader) ([]byte, error) {
 		err := fmt.Errorf("simulating error")
 		return nil, err
 	}
 
-	sc.connect("1234")
+	sc.Connect("1234")
 }

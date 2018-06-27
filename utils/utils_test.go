@@ -1,4 +1,4 @@
-package main
+package utils
 
 import (
     "testing"
@@ -27,7 +27,7 @@ func TestContains (t *testing.T) {
 func TestLogAndCloseApp(t *testing.T)  {
     logAndCloseApp(nil, "test")
     err := fmt.Errorf("simulating error")
-    logFatal = func(format string, v ...interface{}) {
+    LogFatal = func(format string, v ...interface{}) {
         return
     }
     logAndCloseApp(err, "test")

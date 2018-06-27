@@ -4,15 +4,14 @@ import (
 	"flag"
 	"github.com/spf13/viper"
 	"log"
+	"WebhookSlackBotInGoLang/slackintegration"
+	"WebhookSlackBotInGoLang/utils"
+	"WebhookSlackBotInGoLang/rabbitmqinteraction"
 )
 
 const (
 	SlackToken       = "slackToken"
 	RabbitMQDetails  = "rabbitMQ"
-	RabbitMQUserName = "username"
-	RabbitMQPassword = "password"
-	RabbitMQHost     = "host"
-	RabbitMQPort     = "port"
 )
 
 var rabbitMQDefaults = map[string]string{
@@ -30,7 +29,7 @@ func readConfig(configFile string, defaults map[string]interface{}) *viper.Viper
 	v.SetConfigFile(configFile)
 	v.SetConfigType("yaml")
 	err := v.ReadInConfig()
-	failOnError(err, "unable to read the bot config")
+	utils.FailOnError(err, "unable to read the bot config")
 	return v
 }
 
@@ -43,26 +42,26 @@ func main() {
 			"rabbitMQ":   rabbitMQDefaults,
 		})
 
-	var client slackClient
-	client.connect(v.GetString(SlackToken))
+	var client slackintegration.SlackClient
+	client.Connect(v.GetString(SlackToken))
 
-	getMessage := make(chan SlackMessage)
+	getMessage := make(chan rabbitmqinteraction.SlackMessage)
 	sendAck := make(chan bool)
 
-	var mqClient rabbitMQClient
+	var mqClient rabbitmqinteraction.RabbitMQClient
 	mqClient.Init(v.GetStringMapString(RabbitMQDetails))
-	mqClient.connect()
+	mqClient.Connect()
 
-	defer mqClient.ch.Close()
-	defer mqClient.connection.Close()
+	defer mqClient.Channel.Close()
+	defer mqClient.Connection.Close()
 	defer close(sendAck)
 
-	go mqClient.listen("publish_to_unknown", getMessage, sendAck)
+	go mqClient.Listen("publish_to_unknown", getMessage, sendAck)
 
 	for {
 		messageToSlack := <-getMessage
 		log.Printf("Got a message to %s (%f)", messageToSlack.Consumer, messageToSlack.Time)
-		err := client.sendMessage(messageToSlack.MessageToSend, messageToSlack.Consumer)
+		err := client.SendMessage(messageToSlack.MessageToSend, messageToSlack.Consumer)
 		ack := false
 		if err != nil {
 			ack = true

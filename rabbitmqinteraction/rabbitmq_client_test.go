@@ -1,4 +1,4 @@
-package main
+package rabbitmqinteraction
 
 import "testing"
 
@@ -12,7 +12,7 @@ func TestRabbitMQClient_Init(t *testing.T) {
 	rmq["username"] = username
 	rmq["password"] = password
 	rmq["port"] = port
-	rmqClient := rabbitMQClient{}
+	rmqClient := RabbitMQClient{}
 	rmqClient.Init(rmq)
 	if rmqClient.rabbitMQHost != host || rmqClient.password != password ||
 		rmqClient.username != username || rmqClient.port != port {

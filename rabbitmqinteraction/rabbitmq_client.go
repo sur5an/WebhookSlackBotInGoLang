@@ -1,9 +1,17 @@
-package main
+package rabbitmqinteraction
 
 import (
 	"encoding/json"
 	"github.com/streadway/amqp"
 	"log"
+	"WebhookSlackBotInGoLang/utils"
+)
+
+const (
+	RabbitMQUserName = "username"
+	RabbitMQPassword = "password"
+	RabbitMQHost     = "host"
+	RabbitMQPort     = "port"
 )
 
 type SlackMessage struct {
@@ -17,18 +25,18 @@ type SlackMessage struct {
 	Channel       string  `json:"channel"`
 }
 
-type rabbitMQClient struct {
+type RabbitMQClient struct {
 	rabbitMQHost string
 	username     string
 	password     string
 	port         string
-	ch           *amqp.Channel
-	connection   *amqp.Connection
+	Channel      *amqp.Channel
+	Connection   *amqp.Connection
 }
 
 var AMQPConnect = amqp.Dial
 
-func (client *rabbitMQClient) Init(rabbitMQDetails map[string]string) {
+func (client *RabbitMQClient) Init(rabbitMQDetails map[string]string) {
 	client.rabbitMQHost = rabbitMQDetails[RabbitMQHost]
 	client.username = rabbitMQDetails[RabbitMQUserName]
 	client.password = rabbitMQDetails[RabbitMQPassword]
@@ -36,30 +44,30 @@ func (client *rabbitMQClient) Init(rabbitMQDetails map[string]string) {
 	return
 }
 
-func (client *rabbitMQClient) connect() {
+func (client *RabbitMQClient) Connect() {
 	conn, err := AMQPConnect("amqp://" + client.username + ":" +
 		client.password + "@" + client.rabbitMQHost + ":" + client.port)
-	failOnError(err, "failed to open rabbitmq connection with "+client.rabbitMQHost)
+	utils.FailOnError(err, "failed to open rabbitmq connection with "+client.rabbitMQHost)
 
 	ch, err := conn.Channel()
-	failOnError(err, "failed to open channel")
-	client.ch = ch
-	client.connection = conn
+	utils.FailOnError(err, "failed to open channel")
+	client.Channel = ch
+	client.Connection = conn
 	return
 }
 
-func (client rabbitMQClient) listen(queueName string, messageChannel chan SlackMessage, responseChannel chan bool) {
+func (client RabbitMQClient) Listen(queueName string, messageChannel chan SlackMessage, responseChannel chan bool) {
 
 	defer close(messageChannel)
 
-	q, err := client.ch.QueueDeclare(queueName, false, false,
+	q, err := client.Channel.QueueDeclare(queueName, false, false,
 		false, false, nil)
-	failOnError(err, "unable to declare queue")
+	utils.FailOnError(err, "unable to declare queue")
 
-	messages, err := client.ch.Consume(q.Name, "goClient", false,
+	messages, err := client.Channel.Consume(q.Name, "goClient", false,
 		false, false, false, nil)
 
-	failOnError(err, "consume failed")
+	utils.FailOnError(err, "consume failed")
 
 	for message := range messages {
 		var messageToSend SlackMessage
@@ -68,10 +76,10 @@ func (client rabbitMQClient) listen(queueName string, messageChannel chan SlackM
 		messageChannel <- messageToSend
 		if <-responseChannel {
 			err := message.Ack(false)
-			failOnError(err, "unable to ack")
+			utils.FailOnError(err, "unable to ack")
 		} else {
 			err := message.Nack(false, true)
-			failOnError(err, "unable to ack")
+			utils.FailOnError(err, "unable to ack")
 		}
 		log.Printf("Waiting for messages")
 	}

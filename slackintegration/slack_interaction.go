@@ -1,4 +1,4 @@
-package main
+package slackintegration
 
 import (
 	"encoding/json"
@@ -8,9 +8,10 @@ import (
 	"log"
 	"net/http"
 	"sync/atomic"
+	"WebhookSlackBotInGoLang/utils"
 )
 
-type slackClient struct {
+type SlackClient struct {
 	webSocket      *websocket.Conn
 	memberChannels channelList
 	myID           string
@@ -32,7 +33,7 @@ type responseSelf struct {
 type groupList struct {
 	Id      string      `json:"id"`
 	Name    string      `json:"name"`
-	Members StringArray `json:"members"`
+	Members utils.StringArray `json:"members"`
 }
 
 type channelDetails struct {
@@ -69,17 +70,17 @@ func (channels channelList) find(channelName string) (channelToPublish string) {
 	return
 }
 
-func (client slackClient) receiveMessage() (message string, err error) {
+func (client SlackClient) ReceiveMessage() (message string, err error) {
 	println("waiting for message")
 	var m Message
 	err = webSocketReceive(client.webSocket, &m)
-	failOnError(err, "unable to receive message through web socket")
+	utils.FailOnError(err, "unable to receive message through web socket")
 	message = m.Text
 	println(m.Id, m.Type, m.Channel, m.Type)
 	return
 }
 
-func (client slackClient) sendMessage(messageToChannel string, channel string) (err error) {
+func (client SlackClient) SendMessage(messageToChannel string, channel string) (err error) {
 	var message Message
 	message.Id = atomic.AddUint64(&counter, 1)
 	message.Channel = client.memberChannels.find(channel)
@@ -89,34 +90,34 @@ func (client slackClient) sendMessage(messageToChannel string, channel string) (
 	return err
 }
 
-func (client *slackClient) connect(token string) {
+func (client *SlackClient) Connect(token string) {
 	log.Print("connecting to slack")
 	url := fmt.Sprintf("https://slack.com/api/rtm.start?token=%s", token)
 
 	resp, err := GetURL(url)
 	if err != nil {
-		failOnError(err, "error while connecting to slack")
+		utils.FailOnError(err, "error while connecting to slack")
 	}
 	if resp.StatusCode != 200 {
 		err = fmt.Errorf("SlackAPI Failed with return code %d", resp.StatusCode)
-		failOnError(err, "slack api returned non 200 result")
+		utils.FailOnError(err, "slack api returned non 200 result")
 	}
 
 	log.Print("getting details about bot")
 	body, err := ReadHttpBody(resp.Body)
 	resp.Body.Close()
 	if err != nil {
-		failOnError(err, "error on getting details about bot")
+		utils.FailOnError(err, "error on getting details about bot")
 	}
 	var responseObject responseRtmStart
 	log.Print("parsing the details")
 	err = JsonUnMarshal(body, &responseObject)
 	if err != nil {
-		failOnError(err, "error while parsing slack details")
+		utils.FailOnError(err, "error while parsing slack details")
 	}
 	if !responseObject.Ok {
 		err = fmt.Errorf("SlackError: %s", responseObject.Error)
-		failOnError(err, "error slack api return non ok for details")
+		utils.FailOnError(err, "error slack api return non ok for details")
 	}
 	client.myID = responseObject.Self.Id
 
@@ -137,6 +138,6 @@ func (client *slackClient) connect(token string) {
 		}
 	}
 	client.webSocket, err = WSDial(responseObject.Url, "", "https://api.slack.com/")
-	failOnError(err, "error while dialing to webscoket")
+	utils.FailOnError(err, "error while dialing to webscoket")
 	return
 }
