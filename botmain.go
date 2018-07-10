@@ -19,6 +19,7 @@ var rabbitMQDefaults = map[string]string{
 	"password": "guest",
 	"host":     "localhost",
 	"port":     "5672",
+	"channel_to_listen": "",
 }
 
 func readConfig(configFile string, defaults map[string]interface{}) *viper.Viper {
@@ -51,13 +52,14 @@ func main() {
 	defer close(sendAck)
 
 	var mqClient rabbitmqinteraction.RabbitMQClient
-	mqClient.Init(v.GetStringMapString(RabbitMQDetails))
+	rabbitMQDetails := v.GetStringMapString(RabbitMQDetails)
+	mqClient.Init(rabbitMQDetails)
 	mqClient.Connect()
 
 	defer mqClient.Channel.Close()
 	defer mqClient.Connection.Close()
 
-	go mqClient.Listen("publish_to_unknown", getMessage, sendAck)
+	go mqClient.Listen(rabbitMQDetails[rabbitmqinteraction.RabbitMQChannelToListen], getMessage, sendAck)
 
 	for {
 		messageToSlack := <-getMessage

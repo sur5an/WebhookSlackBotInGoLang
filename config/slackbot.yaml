@@ -4,3 +4,4 @@ rabbitMQ:
   username: guest
   password: guest
   port: 5672
+  channel_to_listen: publish_to_slack

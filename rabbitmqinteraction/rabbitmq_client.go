@@ -8,12 +8,13 @@ import (
 )
 
 const (
-	RabbitMQUserName	= "username"
-	RabbitMQPassword 	= "password"
-	RabbitMQHost     	= "host"
-	RabbitMQPort     	= "port"
+	RabbitMQUserName		= "username"
+	RabbitMQPassword 		= "password"
+	RabbitMQHost     		= "host"
+	RabbitMQPort     		= "port"
 	ForClient			 	= "ForClient"
-	ChannelCloseEvent 	= "ChannelClosed"
+	ChannelCloseEvent 		= "ChannelClosed"
+	RabbitMQChannelToListen	= "channel_to_listen"
 )
 
 type SlackMessage struct {
