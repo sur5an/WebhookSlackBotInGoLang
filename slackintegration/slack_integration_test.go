@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"bytes"
 	"io"
-	"WebhookSlackBotInGoLang/utils"
+	"github.com/sur5an/WebhookSlackBotInGoLang/utils"
 )
 
 func getTestSlackClient() (sc SlackClient)  {

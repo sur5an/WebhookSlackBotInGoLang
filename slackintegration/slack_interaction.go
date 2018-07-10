@@ -8,7 +8,7 @@ import (
 	"log"
 	"net/http"
 	"sync/atomic"
-	"WebhookSlackBotInGoLang/utils"
+	"github.com/sur5an/WebhookSlackBotInGoLang/utils"
 )
 
 type SlackClient struct {

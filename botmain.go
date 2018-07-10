@@ -4,9 +4,9 @@ import (
 	"flag"
 	"github.com/spf13/viper"
 	"log"
-	"WebhookSlackBotInGoLang/slackintegration"
-	"WebhookSlackBotInGoLang/utils"
-	"WebhookSlackBotInGoLang/rabbitmqinteraction"
+	"github.com/sur5an/WebhookSlackBotInGoLang/utils"
+	"github.com/sur5an/WebhookSlackBotInGoLang/slackintegration"
+	"github.com/sur5an/WebhookSlackBotInGoLang/rabbitmqinteraction"
 )
 
 const (
@@ -47,6 +47,8 @@ func main() {
 
 	getMessage := make(chan rabbitmqinteraction.SlackMessage)
 	sendAck := make(chan bool)
+	defer close(getMessage)
+	defer close(sendAck)
 
 	var mqClient rabbitmqinteraction.RabbitMQClient
 	mqClient.Init(v.GetStringMapString(RabbitMQDetails))
@@ -54,13 +56,16 @@ func main() {
 
 	defer mqClient.Channel.Close()
 	defer mqClient.Connection.Close()
-	defer close(sendAck)
 
 	go mqClient.Listen("publish_to_unknown", getMessage, sendAck)
 
 	for {
 		messageToSlack := <-getMessage
 		log.Printf("Got a message to %s (%f)", messageToSlack.Consumer, messageToSlack.Time)
+		if messageToSlack.Consumer == rabbitmqinteraction.ForClient &&
+			messageToSlack.MessageToSend == rabbitmqinteraction.ChannelCloseEvent {
+			break
+		}
 		err := client.SendMessage(messageToSlack.MessageToSend, messageToSlack.Consumer)
 		ack := false
 		if err != nil {

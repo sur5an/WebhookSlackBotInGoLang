@@ -4,14 +4,16 @@ import (
 	"encoding/json"
 	"github.com/streadway/amqp"
 	"log"
-	"WebhookSlackBotInGoLang/utils"
+	"github.com/sur5an/WebhookSlackBotInGoLang/utils"
 )
 
 const (
-	RabbitMQUserName = "username"
-	RabbitMQPassword = "password"
-	RabbitMQHost     = "host"
-	RabbitMQPort     = "port"
+	RabbitMQUserName	= "username"
+	RabbitMQPassword 	= "password"
+	RabbitMQHost     	= "host"
+	RabbitMQPort     	= "port"
+	ForClient			 	= "ForClient"
+	ChannelCloseEvent 	= "ChannelClosed"
 )
 
 type SlackMessage struct {
@@ -58,8 +60,6 @@ func (client *RabbitMQClient) Connect() {
 
 func (client RabbitMQClient) Listen(queueName string, messageChannel chan SlackMessage, responseChannel chan bool) {
 
-	defer close(messageChannel)
-
 	q, err := client.Channel.QueueDeclare(queueName, false, false,
 		false, false, nil)
 	utils.FailOnError(err, "unable to declare queue")
@@ -83,4 +83,8 @@ func (client RabbitMQClient) Listen(queueName string, messageChannel chan SlackM
 		}
 		log.Printf("Waiting for messages")
 	}
+	var messageToSend SlackMessage
+	messageToSend.Consumer = ForClient
+	messageToSend.MessageToSend = ChannelCloseEvent
+	messageChannel <- messageToSend
 }
